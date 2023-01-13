@@ -668,10 +668,10 @@ const getConfigFormLocalStorage = () => {
 
 document.onreadystatechange = () => {
 	if (document.readyState !== 'complete') return;
-	// const boomioButtonOut = document.getElementById('boomio-button-out');
+	const boomioButtonOut = document.getElementById('boomio-button-out');
 
-	// boomioButtonOut.addEventListener('click', () => {
+	boomioButtonOut.addEventListener('click', () => {
 		const config = getConfigFormLocalStorage();
 		startAnimation(config);
-	// });
+	});
 };
