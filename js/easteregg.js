@@ -1,96 +1,56 @@
-if ('serviceWorker' in navigator) {
-	// Register a service worker hosted at the root of the
-	// site using the default scope.
-	navigator.serviceWorker.register('./sw.js').then(
-		function (registration) {
-			console.log('Service worker registration succeeded:', registration);
-		},
-		function (error) {
-			console.log('Service worker registration failed:', error);
-		}
-	);
-} else {
-	console.log('Service workers are not supported.');
-}
+////constants
+const localStoragePropertyName = 'boomioPluginConfig';
+
+const defaultSuccessStatus = true;
+
+const defaultAnimation = 0;
+
+const defaultQrCode = '3877216F19FE4DD59E0C08C3BA569A0F';
+
+const defaultAppUrl = 'https://www.boomio.com/?coupon_id=3877216F19FE4DD59E0C08C3BA569A0F';
+
+const defaultGifImage =
+	'https://github.com/boomio-api-v2/easter-egg-styles/blob/16df9945f669319808bd93be1df1de3924234e46/img/5.gif?raw=true';
+
+const appStoreImage =
+	'https://github.com/boomio-api-v2/easter-egg-styles/blob/main/img/appstore.png?raw=true';
+const playStoreImage =
+	'https://github.com/boomio-api-v2/easter-egg-styles/blob/main/img/playstore.png?raw=true';
+const dotImage =
+	'https://github.com/boomio-api-v2/easter-egg-styles/blob/main/img/dot.png?raw=true';
+//////////////////
 
 let db;
-
-async function getDB() {
-	if (!db) {
-		db = await new Promise((resolve, reject) => {
-			const openreq = window.indexedDB.open('QR_CODES', 1);
-
-			openreq.onerror = () => {
-				reject(openreq.error);
-			};
-
-			openreq.onupgradeneeded = () => {
-				// First time setup: create an empty object store
-				var createObjectStore = openreq.result.createObjectStore('codes');
-
-				// Add code for test: START
-				createObjectStore.add("available", "ABCDEFGHIJK");
-				// Add code for test: END
-			};
-
-			openreq.onsuccess = () => {
-				resolve(openreq.result);
-			};
-		});
-	}
-	return db;
-}
-
-async function withStore(type, callback) {
-	const db = await getDB();
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction('codes', type);
-		transaction.oncomplete = () => resolve();
-		transaction.onerror = () => reject(transaction.error);
-		callback(transaction.objectStore('codes'));
-	});
-}
 
 const style = document.createElement('style');
 style.setAttribute('id', 'boomio--stylesheet');
 document.getElementsByTagName('head')[0].appendChild(style);
 
-function addStyles(stylesheet, cssRules) {
+const addStyles = (stylesheet, cssRules) => {
 	if (stylesheet.styleSheet) {
 		stylesheet.styleSheet.cssText = cssRules;
 	} else {
 		stylesheet.appendChild(document.createTextNode(cssRules));
 	}
-}
+};
 
-function makeDiv(qrcode) {
-	// vary size for fun
+const startAnimation = ({ success, qrCode, img, animationNR, appUrl }) => {
+	if (!success) return;
 	const divsize = (200).toFixed();
 	const QRsize = (300).toFixed();
-	var qs = getQueryString(window.location.search);
-	let imageNr = qs.img || 0;
-	let animationNR = qs.ani || 0;
 
-	var dash = '-';
-	var pos = qrcode.indexOf(dash);
+	const dash = '-';
+	const pos = qrCode.indexOf(dash);
 	if (pos != -1) {
-		qrcode = qrcode.substring(0, pos);
-		///				console.log('qrcode='+qrcode)
-
-		//		var tmp = qrcode.substring(pos+1);
-		//		pos = tmp.indexOf(dash);
-		///		pos = qrcode.indexOf(dash);
-		//		qrcode = tmp.substring(0,pos);
+		qrCode = qrCode.substring(0, pos);
 	}
 
-
-	// make position sensitive to size and document's width
 	const posx = (Math.random() * (document.documentElement.clientWidth - QRsize)).toFixed();
-	const posy = (Math.random() * (document.documentElement.clientHeight - (QRsize * 1.5))).toFixed();
+	const posy = (Math.random() * (document.documentElement.clientHeight - QRsize * 1.5)).toFixed();
 
 	const animate = (animation) => (el) => {
 		el.classList.add(`boomio--animation--${animation}`);
-	}
+	};
 	const animArr = [
 		animate('moveRight'),
 		animate('moveLeft'),
@@ -114,8 +74,7 @@ function makeDiv(qrcode) {
 	animationEl.classList.add('boomio--animation__wrapper--initial');
 	animationEl.classList.remove('boomio--qr');
 	animationEl.addEventListener('click', function _listener(e) {
-
-		const elementRemove = document.getElementById("boomio--qr");
+		const elementRemove = document.getElementById('boomio--qr');
 		if (elementRemove != null) {
 			elementRemove.remove();
 		}
@@ -140,7 +99,7 @@ function makeDiv(qrcode) {
 					<div class="coupon_info">
 						<h3>20 %</h3>
 						<h3>Discount</h3>
-						<p>Unique code: <span id="qrcode">${qrcode}</span> </p>
+						<p>Unique code: <span id="qrcode">${qrCode}</span> </p>
 					</div>
 					<div class="coupon__preview__card__after"></div>
 					<div class="coupon__preview__card__befor"></div>
@@ -148,9 +107,9 @@ function makeDiv(qrcode) {
 			</div>
 			<div class="coupon_preview_card_footer">
 				<p>To have immpediate access for all your great rewards <b> open of download</b></p>
-				<a href="https://play.google.com/store/apps/details?id=com.aladinme.boommio.android">
+				<a href=${appUrl}>
 				<div class="btn-content d-flex align-items-center justify-content-center" style="height: 46px;">
-					<img src="img/dot.png" alt="img not find">
+					<img src="${dotImage}" alt="img not find">
 					<div class="d-flex flex-column btn-text-group ml-2"><small class="small-font">Open</small>
 						<b>Boomio
 							app</b>
@@ -158,9 +117,9 @@ function makeDiv(qrcode) {
 				</div>
 				</a>
 				<div class="d-flex pt-2">
-					<div class="appstore-img "><a href=""><img src="img/appstore.png"
+					<div class="appstore-img "><a href=""><img src="${appStoreImage}"
 								alt="App Store"></a></div>
-					<div class="playstore-img"><a href="https://play.google.com/store/apps/details?id=com.aladinme.boommio.android"><img src="img/playstore.png"
+					<div class="playstore-img"><a href=${appUrl}"><img src="${playStoreImage}"
 								alt="Play Store"></a></div>
 				</div>
 				<div>
@@ -169,82 +128,52 @@ function makeDiv(qrcode) {
 			</div>
 		</div>
 	</div>`;
+
 		animationEl.append(qrEl);
-
-		// const qrTitleEl = document.createElement('h3');
-		// qrTitleEl.classList.add('boomio--animation__heading');
-
-		// qrEl.appendChild(qrTitleEl);
-
-		// const qrTitleElContent = document.createTextNode("Scan me with boommio!");
-		// qrTitleEl.appendChild(qrTitleElContent);
-
-		// const qrSubtitleEl = document.createElement('h4');
-
-		// qrSubtitleEl.classList.add('boomio--animation__heading');
-
-		// const qrSubtitleElContent = document.createTextNode("or click to open with app");
-		// qrSubtitleEl.appendChild(qrSubtitleElContent);
-
-		// qrEl.appendChild(qrSubtitleEl);
-
-		// qrEl.addEventListener('click', function() {
-		// 	window.location = `boommio://${qrcode}`
-		// 	setTimeout(() => window.location = 'https://play.google.com/store/apps/details?id=com.aladinme.boommio.android', 2000);
-		// });
-
-		// if (/Mobi/.test(navigator.userAgent)) {
-		// }
-		const generatedqrcode = new QRCode("qrcodeShowHtml", {
-			text: qrcode,
+		new QRCode('qrcodeShowHtml', {
+			text: qrCode,
 			width: 250,
 			height: 250,
-			colorDark: "#000000",
-			colorLight: "#ffffff",
-			correctLevel: QRCode.CorrectLevel.H
+			colorDark: '#000000',
+			colorLight: '#ffffff',
+			correctLevel: QRCode.CorrectLevel.H,
 		});
 
-		// withStore('readwrite', store => {
-		// 	const putReq = store.put('used', qrcode);
-		// 	putReq.onsuccess = function (event) {
-		// 		console.log(`Updated ${qrcode}`);
-		// 	};
-		// });
-
 		function showQR(e) {
-			document.getElementById("qrcodeShow").style.display = 'block';
-			document.getElementById("coupon_div").style.display = 'none'
+			document.getElementById('qrcodeShow').style.display = 'block';
+			document.getElementById('coupon_div').style.display = 'none';
 			e.stopPropagation();
 		}
 		function showCoupon(e) {
-			document.getElementById("qrcodeShow").style.display = 'none';
-			document.getElementById("coupon_div").style.display = 'block'
+			document.getElementById('qrcodeShow').style.display = 'none';
+			document.getElementById('coupon_div').style.display = 'block';
 			e.stopPropagation();
 		}
 		function closeDiscount(e) {
-			const elementRemove = document.getElementById("boomio--qr");
+			const elementRemove = document.getElementById('boomio--qr');
 			elementRemove.remove();
 			e.stopPropagation();
 		}
-		document.getElementById("coupon_div").onclick = showQR;
-		document.getElementById("qrcodeShow").onclick = showCoupon;
-		document.getElementById("close").onclick = closeDiscount;
+		document.getElementById('coupon_div').onclick = showQR;
+		document.getElementById('qrcodeShow').onclick = showCoupon;
+		document.getElementById('close').onclick = closeDiscount;
 
 		// animationEl.removeEventListener('click', _listener);
 	});
 	document.body.appendChild(animationEl);
 
-	const systemFont = "system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue";
-	const duration = "1000ms";
-	const easingBack = "cubic-bezier(0.18, 0.89, 0.32, 1.28)";
-	const easing = "cubic-bezier(0.22, 0.61, 0.36, 1)";
+	const systemFont =
+		'system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue';
+	const duration = '1000ms';
+	const easingBack = 'cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+	const easing = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
 
 	const initialPosition = {
 		x: animationEl.clientWidth + parseInt(posy),
 		nx: -1 * (animationEl.clientWidth + parseInt(posy)),
 		y: animationEl.clientHeight + parseInt(posx),
 		ny: -1 * (animationEl.clientHeight + parseInt(posx)),
-	}
+	};
 	const css = `
 		.boomio--animation__wrapper {
 			text-align: center;
@@ -258,7 +187,7 @@ function makeDiv(qrcode) {
 
 		.boomio--animation__wrapper--initial {
 			width: ${divsize}px;
-			content: url(${imageNr}.gif);
+			content: url(${img});
 			cursor: pointer;
 			transition: transform 300ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
 			animation-duration: ${duration};
@@ -722,34 +651,27 @@ function makeDiv(qrcode) {
 	addStyles(style, css);
 
 	animFunc(animationEl);
-}
+};
 
-getDB().then(() => {
-	withStore('readonly', store => {
-		store.openCursor().onsuccess = function (event) {
-			const cursor = event.target.result;
-			if (!cursor) return;
-			if (cursor.value === 'available') {
-				return makeDiv(cursor.key);
-			}
-		};
+const getConfigFormLocalStorage = () => {
+	const config = localStorage.getItem(localStoragePropertyName);
+	const configToObj = JSON.parse(config);
+
+	const qrCode = configToObj?.qrCode ?? defaultQrCode;
+	const img = configToObj?.img ?? defaultGifImage;
+	const animationNR = configToObj?.animation ?? defaultAnimation;
+	const appUrl = configToObj?.appUrl ?? defaultAppUrl;
+	const success = configToObj?.success ?? defaultSuccessStatus;
+
+	return { success, img, qrCode, animationNR, appUrl };
+};
+
+document.onreadystatechange = () => {
+	if (document.readyState !== 'complete') return;
+	const boomioButtonOut = document.getElementById('boomio-button-out');
+
+	boomioButtonOut.addEventListener('click', () => {
+		const config = getConfigFormLocalStorage();
+		startAnimation(config);
 	});
-});
-
-function getQueryString(qs) {
-	var query = qs.split('&');
-	var queryObj = {};
-
-	if (query.length && query[0].charAt(0) === '?') {
-		query[0] = query[0].substring(1);
-	}
-
-	query.forEach(function (item) {
-		const [key, val] = item.split('=');
-		queryObj[key] = val;
-	});
-
-	return queryObj;
-}
-
-
+};
