@@ -184,7 +184,9 @@ const startAnimation = ({ success, qrCode, img, animationNR, appUrl }) => {
 			visibility: visible;
 			opacity: 1;
 		}
-
+        .boomio--animation__wrapper:empty {
+			display: block;
+		}
 		.boomio--animation__wrapper--initial {
 			width: ${divsize}px;
 			content: url(${img});
